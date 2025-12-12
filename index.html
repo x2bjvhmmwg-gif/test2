@@ -38,16 +38,16 @@
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            background: #fafafa;
         }
 
-        /* 버튼 배치 grid 레이아웃 */
+        /* 버튼 배치 grid */
         .buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
         }
 
-        /* 버튼 스타일 */
         button {
             padding: 15px;
             font-size: 18px;
@@ -57,13 +57,11 @@
             background-color: #e0e0e0;
         }
 
-        /* 연산자 버튼 스타일 */
         .operator {
             background-color: #4CAF50;
             color: white;
         }
 
-        /* 전체 초기화 버튼 */
         .clear {
             background-color: #f44336;
             color: white;
@@ -73,9 +71,9 @@
             opacity: 0.7;
         }
 
-        /* ============================================
-            🔹 히스토리 영역 스타일
-        =============================================*/
+        /* ============================
+            🔹 히스토리 스타일
+        ============================*/
         .history-container {
             margin-top: 20px;
         }
@@ -104,9 +102,9 @@
             background: #eee;
         }
 
-        /* ============================================
-            🔹 커스텀 팝업(모달) 스타일
-        =============================================*/
+        /* ============================
+            🔹 팝업(모달)
+        ============================*/
         .modal-bg {
             position: fixed;
             top: 0;
@@ -114,7 +112,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.4);
-            display: none; /* 기본 감춤 */
+            display: none;
             justify-content: center;
             align-items: center;
         }
@@ -144,7 +142,6 @@
             background: #4CAF50;
             border: none;
             color: white;
-            font-size: 16px;
             border-radius: 5px;
             cursor: pointer;
         }
@@ -157,15 +154,12 @@
 </head>
 <body>
 
-    <!-- ============================================
-         🔹 계산기 박스 전체
-    =============================================-->
     <div class="calculator">
 
         <!-- 계산기 입력창 -->
         <input type="text" id="display" disabled>
 
-        <!-- 버튼 영역 -->
+        <!-- 숫자/연산 버튼들 -->
         <div class="buttons">
             <button onclick="addValue('7')">7</button>
             <button onclick="addValue('8')">8</button>
@@ -187,22 +181,17 @@
             <button class="clear" onclick="clearDisplay()">C</button>
             <button class="operator" onclick="addValue('+')">+</button>
 
-            <!-- = 버튼 (4칸 차지) -->
             <button class="operator" style="grid-column: span 4;" onclick="calculate()">=</button>
         </div>
 
-        <!-- ============================================
-             🔹 히스토리 영역
-        =============================================-->
+        <!-- 히스토리 -->
         <div class="history-container">
             <div class="history-title">계산 기록</div>
             <div class="history-list" id="history"></div>
         </div>
     </div>
 
-    <!-- ============================================
-         🔹 계산 결과 팝업(모달)
-    =============================================-->
+    <!-- 팝업(모달) -->
     <div class="modal-bg" id="modal">
         <div class="modal-box">
             <div class="modal-title">계산 결과</div>
@@ -211,91 +200,112 @@
         </div>
     </div>
 
+<script>
+    /* ============================================
+        🔹 입력창에 문자 추가
+    =============================================*/
+    function addValue(value) {
+        document.getElementById('display').value += value;
+    }
 
+    /* ============================================
+        🔹 CLEAR 기능
+    =============================================*/
+    function clearDisplay() {
+        document.getElementById('display').value = '';
+    }
 
-    <script>
-        /* ============================================
-            🔹 숫자/연산자 버튼 클릭 시 입력창에 추가
-        =============================================*/
-        function addValue(value) {
-            document.getElementById('display').value += value;
+    /* ============================================
+        🔹 계산 실행
+        ※ 입력값 없으면 0으로 계산되게 설정됨
+    =============================================*/
+    function calculate() {
+        const input = document.getElementById('display').value;
+        const display = document.getElementById('display');
+
+        // ⭐⭐⭐ 아무 입력 없으면 결과를 0으로 ⭐⭐⭐
+        if (input.trim() === "") {
+            document.getElementById('modal-result').innerText = 0;
+            document.getElementById('modal').style.display = 'flex';
+            display.value = 0;
+            addHistory("0 = 0");
+            return;
         }
 
+        try {
+            const result = eval(input);
 
-        /* ============================================
-            🔹 C 버튼 → 입력창 초기화
-        =============================================*/
-        function clearDisplay() {
-            document.getElementById('display').value = '';
+            document.getElementById('modal-result').innerText = result;
+            document.getElementById('modal').style.display = 'flex';
+
+            display.value = result;
+
+            addHistory(input + " = " + result);
+
+        } catch {
+            display.value = "오류";
+        }
+    }
+
+    /* ============================================
+        🔹 히스토리 추가 기능
+    =============================================*/
+    function addHistory(text) {
+        const historyList = document.getElementById('history');
+
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerText = text;
+
+        item.onclick = () => {
+            const formula = text.split("=")[0].trim();
+            document.getElementById('display').value = formula;
+        };
+
+        historyList.prepend(item);
+    }
+
+    /* ============================================
+        🔹 팝업 닫기 버튼
+    =============================================*/
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+
+
+    /* =====================================================
+        🔥 키보드 입력 처리 이벤트 (추가된 부분)
+        - 숫자, 연산자 입력 가능
+        - Enter → 계산
+        - Backspace → 한 글자 삭제
+        - C 또는 ESC → 전체 클리어
+    =====================================================*/
+    document.addEventListener('keydown', function(e) {
+        const key = e.key;
+
+        // 숫자 또는 연산자 입력
+        if ("0123456789+-*/.".includes(key)) {
+            addValue(key);
         }
 
+        // Enter → 계산 실행
+        if (key === "Enter") {
+            calculate();
+        }
 
-        /* =========================================================================
-           🔹 계산 실행 함수
-           ※ 변경한 부분 포함: "입력값이 비었으면 0으로 계산" 처리 추가됨
-           =========================================================================*/
-        function calculate() {
-            const input = document.getElementById('display').value;
+        // Backspace → 마지막 글자 삭제
+        if (key === "Backspace") {
             const display = document.getElementById('display');
-
-            /*  
-                ⭐⭐⭐⭐⭐ 중요 변경 부분 ⭐⭐⭐⭐⭐
-                - 아무 값도 없이 "="을 누르면 0을 결과로 반환하도록 처리
-            */
-            if (input.trim() === "") {
-                document.getElementById('modal-result').innerText = 0;  // 팝업 결과
-                document.getElementById('modal').style.display = 'flex'; // 팝업 표시
-                display.value = 0;                                      // 입력창 표시
-                addHistory("0 = 0");                                    // 히스토리 기록
-                return;                                                 // 계산 종료
-            }
-
-            /*  
-                ⭐ 정상 계산 구간 ⭐
-            */
-            try {
-                const result = eval(input);
-
-                document.getElementById('modal-result').innerText = result;
-                document.getElementById('modal').style.display = 'flex';
-
-                display.value = result;
-
-                addHistory(input + " = " + result);
-
-            } catch {
-                display.value = "오류";
-            }
+            display.value = display.value.slice(0, -1);
         }
 
-
-        /* ============================================
-            🔹 히스토리에 새 기록 추가
-        =============================================*/
-        function addHistory(text) {
-            const historyList = document.getElementById('history');
-
-            const item = document.createElement('div');
-            item.className = 'history-item';
-            item.innerText = text;
-
-            // 클릭하면 해당 수식을 다시 입력창에 불러오기
-            item.onclick = () => {
-                const formula = text.split("=")[0].trim();
-                document.getElementById('display').value = formula;
-            };
-
-            historyList.prepend(item); // 최신 기록을 위로
+        // ESC 또는 C → 클리어
+        if (key === "Escape" || key === "c" || key === "C") {
+            clearDisplay();
         }
-
-
-        /* ============================================
-            🔹 팝업 닫기 버튼
-        =============================================*/
-        function closeModal() {
-            document.getElementById('modal').style.display = 'none';
-        }
-    </script>
+    });
+</script>
 
 </body>
 </html>
